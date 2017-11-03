@@ -10,13 +10,37 @@
 		varying float height;
 
 		uniform float time;
+		uniform vec3 intersects[50];
+		uniform bool isOn[50];
+
+		float getHeight(){
+
+			float newHeight = 0.0;
+
+			float iVal = 0.0;
+			float numOn = 0.1;
+
+			for( int i = 0; i < 50; i++ ){
+
+				iVal = float(i);
+
+				if( isOn[i] && distance(position,intersects[i]) < (iVal)/10.0 ){
+					numOn += 0.5;
+					newHeight += sin( time - distance(position,intersects[i]) * 31.45 )/( max( 1.0, (distance(position,intersects[i]) * 50.0)) );
+				}
+
+			}
+
+			return newHeight/numOn;
+
+		}
 
 		void main(){
 
 			vNormal = normal;
 			vUv = uv;
 
-			height = (sin( uv.y * 31.45 * 4.0 + time) - cos( (uv.x-uv.y) * 31.45 )/2.0 ) * 0.1;
+			height = getHeight();
 
 			vec3 newPosition = position + ( normal * height ) + 0.1;
 

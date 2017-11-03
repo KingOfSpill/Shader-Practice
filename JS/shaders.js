@@ -10,10 +10,20 @@ var clock = new THREE.Clock();
 var uniforms;
 
 var mouse = new THREE.Vector2();
-var mouseDown = false;
+var rotateDown = false, leftDown = false, leftClock = new THREE.Clock(), leftTime = 0;
 var raycaster = new THREE.Raycaster();
 
 var muted = false, paused = false;
+
+var sphere;
+
+var intersects = [];
+var isOn = [];
+for( var i = 0; i < 50; i++ ){
+	intersects.push( new THREE.Vector3(0.0, 0.0, 0.0) );
+	isOn.push(false);
+}
+
 
 function init(){
 
@@ -33,7 +43,12 @@ function initScene(){
 
 	mainScene = new THREE.Scene();
 
-	uniforms = { time: { value: clock.getElapsedTime() }, lightPos: { value: new THREE.Vector3(-20,20,20)} };
+	uniforms = { 
+		time: { value: clock.getElapsedTime() },
+		lightPos: { value: new THREE.Vector3(-20,20,20)},
+		intersects: { value: intersects },
+		isOn: { value: isOn }
+	};
 
 	var sphereMaterial = new THREE.ShaderMaterial( {
 		uniforms: uniforms,
@@ -41,12 +56,12 @@ function initScene(){
 		fragmentShader: $('#sphereFrag').text()
 	} );
 
-	var sphere = new THREE.Mesh( new THREE.SphereGeometry(3, 500, 500), sphereMaterial );
+	sphere = new THREE.Mesh( new THREE.SphereGeometry(3, 500, 500), sphereMaterial );
 	mainScene.add(sphere);
 
-	var cube = new THREE.Mesh( new THREE.CubeGeometry(1, 1, 1), new THREE.MeshPhongMaterial({color: 'red', shininess: 50}) );
+	/*var cube = new THREE.Mesh( new THREE.CubeGeometry(1, 1, 1), new THREE.MeshPhongMaterial({color: 'red', shininess: 50}) );
 	cube.position.set(4,4,4);
-	mainScene.add(cube);
+	mainScene.add(cube);*/
 
 	//hudScene = new THREE.Scene();
 
@@ -135,7 +150,27 @@ function resizeMain() {
     
 }*/
 
+function numOn(){
+
+	var j = 0;
+
+	for( var i = 0; i < isOn.length; i++ )
+		if( isOn[i] )
+			j++;
+
+	return j;
+}
+
 function render(){
+
+	if( numOn() > 1 || !leftDown ){
+		intersects.unshift( new THREE.Vector3(0.0,0.0,0.0) );
+		intersects.pop();
+		isOn.unshift( false );
+		isOn.pop();
+		uniforms.intersects.value = intersects;
+		uniforms.isOn.value = isOn;
+	}
 
 	uniforms.time.value = clock.getElapsedTime() * 10;
 
@@ -152,10 +187,12 @@ function render(){
 $('html').mousedown( function(e){
 
 	if( !paused )
-		if( e.which === 2 ){
-			mouseDown = true;
+		if( e.which === 1 ){
+			leftDown = true;
+		}else if( e.which === 2 ){
+			rotateDown = true;
 		}else if( e.which === 3 ){
-			mouseDown = true;
+			rotateDown = true;
 			e.preventDefault();
 			return false; 
 		}
@@ -169,10 +206,12 @@ document.oncontextmenu = function() {
 $('html').mouseup( function(e){
 
 	if( !paused )
-		if( e.which === 2 ){
-			mouseDown = false;
+		if( e.which === 1 ){
+			leftDown = false;
+		}else if( e.which === 2 ){
+			rotateDown = false;
 		}else if( e.which === 3 ){
-			mouseDown = false;
+			rotateDown = false;
 			e.preventDefault();
 			return false; 
 
@@ -190,8 +229,21 @@ function handleMouseMovement(e){
 	const dX = newX - mouse.x;
 	const dY = newY - mouse.y;
 
-	if(mouseDown)
+	if(rotateDown)
 		rotateCamera(mainCamera, dX, dY);
+
+	raycaster.setFromCamera( mouse, mainCamera );
+	var rayIntersects = raycaster.intersectObject( sphere );
+
+	if( leftDown && rayIntersects.length >= 1 ){
+		var intersect = rayIntersects[0];
+		intersects.unshift( intersect.point );
+		intersects.pop();
+		isOn.unshift( true );
+		isOn.pop();
+		uniforms.intersects.value = intersects;
+		uniforms.isOn.value = isOn;
+	}
 
 	mouse.x = newX;
 	mouse.y = newY;
