@@ -6,6 +6,9 @@ var mainScene, hudScene;
 var mainCamera, mainRenderer;
 var hudCamera, hudRenderer;
 
+var clock = new THREE.Clock();
+var uniforms;
+
 var mouse = new THREE.Vector2();
 var mouseDown = false;
 var raycaster = new THREE.Raycaster();
@@ -30,7 +33,15 @@ function initScene(){
 
 	mainScene = new THREE.Scene();
 
-	var sphere = new THREE.Mesh( new THREE.SphereGeometry(3, 45, 45), new THREE.MeshPhongMaterial({color: 'blue', shininess: 50}) );
+	uniforms = { time: { value: clock.getElapsedTime() }, lightPos: { value: new THREE.Vector3(-20,20,20)} };
+
+	var sphereMaterial = new THREE.ShaderMaterial( {
+		uniforms: uniforms,
+		vertexShader: $('#sphereVert').text(),
+		fragmentShader: $('#sphereFrag').text()
+	} );
+
+	var sphere = new THREE.Mesh( new THREE.SphereGeometry(3, 500, 500), sphereMaterial );
 	mainScene.add(sphere);
 
 	var cube = new THREE.Mesh( new THREE.CubeGeometry(1, 1, 1), new THREE.MeshPhongMaterial({color: 'red', shininess: 50}) );
@@ -125,6 +136,8 @@ function resizeMain() {
 }*/
 
 function render(){
+
+	uniforms.time.value = clock.getElapsedTime() * 10;
 
 	resizeMain();
 	mainRenderer.render( mainScene, mainCamera );

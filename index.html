@@ -3,6 +3,51 @@
 
 <head>
 	<link rel="stylesheet" type="text/css" href="index.css">
+	<script type="x-shader/x-vertex" id="sphereVert">
+		
+		varying vec3 vNormal;
+		varying vec2 vUv;
+		varying float height;
+
+		uniform float time;
+
+		void main(){
+
+			vNormal = normal;
+			vUv = uv;
+
+			height = (sin( uv.y * 31.45 * 4.0 + time) - cos( (uv.x-uv.y) * 31.45 )/2.0 ) * 0.1;
+
+			vec3 newPosition = position + ( normal * height ) + 0.1;
+
+			gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition,1.0);
+
+		}
+
+	</script>
+	<script type="x-shader/x-fragment" id="sphereFrag">
+
+		varying vec3 vNormal;
+		varying vec2 vUv;
+		varying float height;
+
+		uniform float time;
+		uniform vec3 lightPos;
+
+		void main(){
+
+			vec3 normLight = normalize(lightPos);
+
+			float dProd = (dot(vNormal, normLight) + 0.5)/2.0;
+			float dProd2 = step( 0.25, dProd );
+
+			float color = mix(step(0.22, height + 0.2), dProd2, 0.5);
+
+			gl_FragColor = vec4( color - 0.2, color - 0.2, mix(1.0, dProd2, 0.5),1.0);
+
+		}
+
+	</script>
 	<script src="Libs/jquery-3.2.1.min.js"></script>
 	<script src="Libs/three.min.js"></script>
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
