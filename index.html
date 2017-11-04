@@ -9,9 +9,9 @@
 		varying vec2 vUv;
 		varying float height;
 
-		uniform float time;
 		uniform vec3 intersects[50];
 		uniform bool isOn[50];
+		uniform float timeActive[50];
 
 		float getHeight(){
 
@@ -20,18 +20,18 @@
 			float iVal = 0.0;
 			float numOn = 0.1;
 
-			for( int i = 0; i < 50; i++ ){
+			for( int i = 0; i < 49; i++ ){
 
 				iVal = float(i);
 
-				if( isOn[i] && distance(position,intersects[i]) < (iVal)/10.0 ){
-					numOn += 0.5;
-					newHeight += sin( time - distance(position,intersects[i]) * 31.45 )/( max( 1.0, (distance(position,intersects[i]) * 50.0)) );
+				if( isOn[i] && distance(position,intersects[i]) < (timeActive[i]/10.0 + 0.2) && distance(position,intersects[i]) > (timeActive[i]/10.0) ){
+					numOn += 1.0;
+					newHeight += distance(intersects[i],intersects[i+1]) * sin( distance(position,intersects[i]) * 31.45 - timeActive[i] )/( max( 1.0, (distance(position,intersects[i]) * 20.0)) );
 				}
 
 			}
 
-			return newHeight/numOn;
+			return newHeight;
 
 		}
 
@@ -65,7 +65,7 @@
 			float dProd = (dot(vNormal, normLight) + 0.5)/2.0;
 			float dProd2 = step( 0.25, dProd );
 
-			float color = mix(step(0.22, height + 0.2), dProd2, 0.5);
+			float color = mix( step( 0.22, height + 0.2), dProd2, 0.5);
 
 			gl_FragColor = vec4( color - 0.2, color - 0.2, mix(1.0, dProd2, 0.5),1.0);
 

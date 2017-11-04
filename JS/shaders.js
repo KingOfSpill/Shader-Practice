@@ -19,9 +19,11 @@ var sphere;
 
 var intersects = [];
 var isOn = [];
+var timeActive = [];
 for( var i = 0; i < 50; i++ ){
 	intersects.push( new THREE.Vector3(0.0, 0.0, 0.0) );
 	isOn.push(false);
+	timeActive.push(0.0);
 }
 
 
@@ -44,7 +46,7 @@ function initScene(){
 	mainScene = new THREE.Scene();
 
 	uniforms = { 
-		time: { value: clock.getElapsedTime() },
+		timeActive: { value: timeActive },
 		lightPos: { value: new THREE.Vector3(-20,20,20)},
 		intersects: { value: intersects },
 		isOn: { value: isOn }
@@ -163,16 +165,12 @@ function numOn(){
 
 function render(){
 
-	if( numOn() > 1 || !leftDown ){
-		intersects.unshift( new THREE.Vector3(0.0,0.0,0.0) );
-		intersects.pop();
-		isOn.unshift( false );
-		isOn.pop();
-		uniforms.intersects.value = intersects;
-		uniforms.isOn.value = isOn;
-	}
+	var delta = clock.getDelta();
 
-	uniforms.time.value = clock.getElapsedTime() * 10;
+	for( var i = 0; i < timeActive.length; i++)
+		if( isOn[i] )
+			timeActive[i] += delta * 10;
+	uniforms.timeActive.value = timeActive;
 
 	resizeMain();
 	mainRenderer.render( mainScene, mainCamera );
@@ -208,6 +206,15 @@ $('html').mouseup( function(e){
 	if( !paused )
 		if( e.which === 1 ){
 			leftDown = false;
+			intersects.unshift( new THREE.Vector3() );
+			intersects.pop();
+			isOn.unshift( false );
+			isOn.pop();
+			timeActive.unshift( 0.0 );
+			timeActive.pop();
+			uniforms.intersects.value = intersects;
+			uniforms.isOn.value = isOn;
+			uniforms.timeActive.value = timeActive;
 		}else if( e.which === 2 ){
 			rotateDown = false;
 		}else if( e.which === 3 ){
@@ -237,12 +244,23 @@ function handleMouseMovement(e){
 
 	if( leftDown && rayIntersects.length >= 1 ){
 		var intersect = rayIntersects[0];
+
+		if( intersects[0].equals( new THREE.Vector3() ) ){
+			intersects.unshift( intersect.point );
+			intersects.pop();
+			isOn.unshift( false );
+			isOn.pop();
+		}
+
 		intersects.unshift( intersect.point );
 		intersects.pop();
 		isOn.unshift( true );
 		isOn.pop();
+		timeActive.unshift( 0.0 );
+		timeActive.pop();
 		uniforms.intersects.value = intersects;
 		uniforms.isOn.value = isOn;
+		uniforms.timeActive.value = timeActive;
 	}
 
 	mouse.x = newX;
