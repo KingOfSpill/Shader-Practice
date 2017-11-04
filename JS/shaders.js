@@ -7,7 +7,7 @@ var mainCamera, mainRenderer;
 var hudCamera, hudRenderer;
 
 var clock = new THREE.Clock();
-var uniforms;
+var dragUniforms, waterUniforms;
 
 var mouse = new THREE.Vector2();
 var rotateDown = false, leftDown = false, leftClock = new THREE.Clock(), leftTime = 0;
@@ -15,7 +15,7 @@ var raycaster = new THREE.Raycaster();
 
 var muted = false, paused = false;
 
-var sphere;
+var waterDrag, waterSphere;
 
 var intersects = [];
 var isOn = [];
@@ -45,21 +45,45 @@ function initScene(){
 
 	mainScene = new THREE.Scene();
 
-	uniforms = { 
+	dragUniforms = { 
 		timeActive: { value: timeActive },
 		lightPos: { value: new THREE.Vector3(-20,20,20)},
 		intersects: { value: intersects },
 		isOn: { value: isOn }
 	};
 
-	var sphereMaterial = new THREE.ShaderMaterial( {
-		uniforms: uniforms,
-		vertexShader: $('#sphereVert').text(),
-		fragmentShader: $('#sphereFrag').text()
+	var waterDragMaterial = new THREE.ShaderMaterial( {
+		uniforms: dragUniforms,
+		vertexShader: $('#waterDragVert').text(),
+		fragmentShader: $('#waterDragFrag').text()
 	} );
 
-	sphere = new THREE.Mesh( new THREE.SphereGeometry(3, 500, 500), sphereMaterial );
-	mainScene.add(sphere);
+	waterDrag = new THREE.Mesh( new THREE.SphereGeometry(3, 500, 500), waterDragMaterial );
+	mainScene.add(waterDrag);
+
+	waterUniforms = { 
+		time: { value: 0.0 },
+		lightPos: { value: new THREE.Vector3(-20,20,20)}
+	};
+
+	var waterSphereMaterial = new THREE.ShaderMaterial( {
+		uniforms: waterUniforms,
+		vertexShader: $('#waterSphereVert').text(),
+		fragmentShader: $('#waterSphereFrag').text()
+	} );
+
+	waterSphere = new THREE.Mesh( new THREE.SphereGeometry(3, 500, 500), waterSphereMaterial );
+	waterSphere.position.x = -7;
+	mainScene.add(waterSphere);
+
+	var cubeMaterial= new THREE.ShaderMaterial( {
+		vertexShader: $('#cubePatternVert').text(),
+		fragmentShader: $('#cubePatternFrag').text()
+	} );
+
+	var cube = new THREE.Mesh( new THREE.CubeGeometry(3, 3, 3), cubeMaterial );
+	cube.position.x = 7;
+	mainScene.add(cube);
 
 	/*var cube = new THREE.Mesh( new THREE.CubeGeometry(1, 1, 1), new THREE.MeshPhongMaterial({color: 'red', shininess: 50}) );
 	cube.position.set(4,4,4);
@@ -166,11 +190,12 @@ function numOn(){
 function render(){
 
 	var delta = clock.getDelta();
+	waterUniforms.time.value += delta * 10.0;
 
 	for( var i = 0; i < timeActive.length; i++)
 		if( isOn[i] )
 			timeActive[i] += delta * 10;
-	uniforms.timeActive.value = timeActive;
+	dragUniforms.timeActive.value = timeActive;
 
 	resizeMain();
 	mainRenderer.render( mainScene, mainCamera );
@@ -212,9 +237,9 @@ $('html').mouseup( function(e){
 			isOn.pop();
 			timeActive.unshift( 0.0 );
 			timeActive.pop();
-			uniforms.intersects.value = intersects;
-			uniforms.isOn.value = isOn;
-			uniforms.timeActive.value = timeActive;
+			dragUniforms.intersects.value = intersects;
+			dragUniforms.isOn.value = isOn;
+			dragUniforms.timeActive.value = timeActive;
 		}else if( e.which === 2 ){
 			rotateDown = false;
 		}else if( e.which === 3 ){
@@ -240,7 +265,7 @@ function handleMouseMovement(e){
 		rotateCamera(mainCamera, dX, dY);
 
 	raycaster.setFromCamera( mouse, mainCamera );
-	var rayIntersects = raycaster.intersectObject( sphere );
+	var rayIntersects = raycaster.intersectObject( waterDrag );
 
 	if( leftDown && rayIntersects.length >= 1 ){
 		var intersect = rayIntersects[0];
@@ -258,9 +283,9 @@ function handleMouseMovement(e){
 		isOn.pop();
 		timeActive.unshift( 0.0 );
 		timeActive.pop();
-		uniforms.intersects.value = intersects;
-		uniforms.isOn.value = isOn;
-		uniforms.timeActive.value = timeActive;
+		dragUniforms.intersects.value = intersects;
+		dragUniforms.isOn.value = isOn;
+		dragUniforms.timeActive.value = timeActive;
 	}
 
 	mouse.x = newX;
